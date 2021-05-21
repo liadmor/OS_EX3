@@ -37,8 +37,8 @@ public class Copier implements Runnable {
                 is.close();
                 os.close();
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 }
