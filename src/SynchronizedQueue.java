@@ -45,23 +45,29 @@ public class SynchronizedQueue<T> {
 	 * @see #registerProducer()
 	 * @see #unregisterProducer()
 	 */
-	public T dequeue()  throws InterruptedException {
+	public T dequeue() {
 		T ans;
-		if(isEmpty()){
-			synchronized (this){
-				if(producers > 0 ){
-					wait();
-				}
-				else {
+		synchronized (this) {
+			while (isEmpty()) {
+				if (producers > 0) {
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				} else {
 					return null;
 				}
 			}
 		}
-		ans = buffer[front];
-		buffer[front] = null;
-		front = (front + 1) % buffer.length;
-		numItem--;
-		return ans;
+		synchronized (this){
+			ans = buffer[front];
+			buffer[front] = null;
+			front = (front + 1) % buffer.length;
+			numItem--;
+			notifyAll();
+			return ans;
+		}
 	}
 
 	/**
@@ -70,18 +76,23 @@ public class SynchronizedQueue<T> {
 	 * 
 	 * @param item Item to enqueue
 	 */
-	public void enqueue(T item) throws InterruptedException{
-		if(isFull()){
-			synchronized (this){
-				if(producers > 0 ){
-					wait();
+	public void enqueue(T item){
+		synchronized (this){
+			if(isFull()) {
+				if (producers > 0) {
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}
-		else{
+		synchronized (this){
 			rear = (rear + 1) % getCapacity();
 			buffer[rear] = item;
 			numItem++;
+			notifyAll();
 		}
 	}
 
@@ -114,9 +125,11 @@ public class SynchronizedQueue<T> {
 	 * @see #dequeue()
 	 * @see #unregisterProducer()
 	 */
-	public synchronized void registerProducer() {
+	public void registerProducer() {
 		// TODO: This should be in a critical section
-		this.producers++;
+		synchronized (this) {
+			this.producers++;
+		}
 	}
 
 	/**
@@ -125,8 +138,10 @@ public class SynchronizedQueue<T> {
 	 * @see #dequeue()
 	 * @see #registerProducer()
 	 */
-	public synchronized void unregisterProducer() {
+	public void unregisterProducer() {
 		// TODO: This should be in a critical section
-		this.producers--;
+		synchronized (this){
+			this.producers--;
+		}
 	}
 }

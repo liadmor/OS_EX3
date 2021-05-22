@@ -21,27 +21,33 @@ public class Scouter implements Runnable {
 
     public void run() {
         m_directoryQeueu.registerProducer();
-        try {
-            run(m_root, m_isMilestones);
-            m_directoryQeueu.unregisterProducer();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (m_isMilestones) {
+            m_milestonesQueue.registerProducer();
+        }
+        run(m_root, m_isMilestones);
+        m_directoryQeueu.unregisterProducer();
+        if (m_isMilestones) {
+            m_milestonesQueue.unregisterProducer();
         }
     }
 
-    public void run(File m_root, boolean isMilestones) throws InterruptedException {
-        if (m_root.isFile()) {
+    public void run(File m_root, boolean isMilestones) {
+
+        if (!m_root.isDirectory()) {
             return;
         } else {
-            File[] allDirs = m_root.listFiles(File::isDirectory);
-            for (File dir : allDirs) {
-                m_directoryQeueu.registerProducer();
-                m_directoryQeueu.enqueue(dir);
-                m_directoryQeueu.unregisterProducer();
-                run(dir, m_isMilestones);
-                if (isMilestones) {
-                    m_milestonesQueue.enqueue(dir.getName());
+            m_directoryQeueu.enqueue(m_root);
+            if (isMilestones) {
+                synchronized (this) {
+                    m_milestonesQueue.enqueue(String.format("Scouter on thread id %d: directory named \"%s\" was scouted", m_id, m_root.getName()));
                 }
+            }
+            File[] allDirs = m_root.listFiles(File::isDirectory);
+            if (allDirs == null){
+                return;
+            }
+            for (File dir : allDirs) {
+                run(dir, m_isMilestones);
             }
         }
     }

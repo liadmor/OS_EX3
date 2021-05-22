@@ -20,55 +20,29 @@ public class Searcher implements Runnable {
     }
 
     public void run() {
-        File dirToSearch = null;
-        try {
-            dirToSearch = m_directoryQueue.dequeue();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        m_resultsQueue.registerProducer();
+        if (m_isMilestones) {
+            m_milestonesQueue.registerProducer();
         }
+        File dirToSearch = null;
+        dirToSearch = m_directoryQueue.dequeue();
         while (dirToSearch != null) {
             File[] allFiles = dirToSearch.listFiles(File::isFile);
-            for (File file : allFiles) {
-                if (file.getName().toLowerCase().endsWith(m_extension)) {
-                    m_resultsQueue.registerProducer();
-                    try {
+            if (allFiles != null) {
+                for (File file : allFiles) {
+                    if (file.getName().endsWith(m_extension)) {
                         m_resultsQueue.enqueue(file);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    m_resultsQueue.unregisterProducer();
-                    if (m_isMilestones) {
-                        m_milestonesQueue.registerProducer();
-                        try {
-                            m_milestonesQueue.enqueue(file.getName());
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        if (m_isMilestones) {
+                            m_milestonesQueue.enqueue(String.format("Searcher on thread id %d: directory named \"%s\" was found", m_id, file.getName()));
                         }
-                        m_milestonesQueue.unregisterProducer();
                     }
                 }
-
             }
-            try {
-                dirToSearch = m_directoryQueue.dequeue();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            dirToSearch = m_directoryQueue.dequeue();
         }
+        if (m_isMilestones) {
+            m_milestonesQueue.unregisterProducer();
+        }
+        m_resultsQueue.unregisterProducer();
     }
-
-    /*public static void main(String[] args) {
-        String extension = ".docx";
-        SynchronizedQueue<File> directoryQueue = new SynchronizedQueue<>(20);
-        String root = "C:\\Users\\97250\\OperSys\\EX3\\stest";
-        SynchronizedQueue<File> resultsQueue = new SynchronizedQueue<>(20);
-        SynchronizedQueue<String> milestonesQueue = new SynchronizedQueue<>(20);
-        Scouter ans = new Scouter(1, directoryQueue, new File(root), milestonesQueue, true );
-        ans.run();
-        //System.out.println(directoryQueue.getSize());
-
-        Searcher test = new Searcher(2, extension, directoryQueue, resultsQueue, milestonesQueue, true);
-        test.run();
-        System.out.println(test.m_resultsQueue.getSize());
-    }*/
 }

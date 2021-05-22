@@ -1,6 +1,9 @@
 import javax.xml.crypto.dsig.spec.XSLTTransformParameterSpec;
 import java.io.*;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Copier implements Runnable {
 
@@ -20,50 +23,63 @@ public class Copier implements Runnable {
     }
 
     public void run() {
-
         File fileToCopy = null;
         InputStream is = null;
         OutputStream os = null;
+        byte[] buf = new byte[COPY_BUFFER_SIZE];
         String dest = null;
-
+        if (m_isMilestones) {
+            m_milestonesQueue.registerProducer();
+        }
         try {
             fileToCopy = m_resultsQueue.dequeue();
-            dest = m_destination.getAbsolutePath() + File.separator + fileToCopy.getName();
             while (fileToCopy != null) {
                 dest = m_destination.getAbsolutePath() + File.separator + fileToCopy.getName();
                 is = new FileInputStream((fileToCopy));
                 os = new FileOutputStream(dest);
-                byte[] buf = new byte[COPY_BUFFER_SIZE];
                 int bytesRead = is.read(buf);
                 while (bytesRead > 0) {
                     os.write(buf, 0, bytesRead);
+                    bytesRead = is.read(buf);
+                }
+                if (m_isMilestones) {
+                    m_milestonesQueue.enqueue(String.format("Copier on thread id %d: directory named \"%s\" was copied", m_id, fileToCopy.getName()));
                 }
                 is.close();
                 os.close();
                 fileToCopy = m_resultsQueue.dequeue();
             }
+            if (m_isMilestones) {
+                m_milestonesQueue.unregisterProducer();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    /*public void run()
+    {
+        System.out.println("gal is the king!!!!!!!!!!!!!!!!!!!!!!");
 
-    public static void main(String[] args) {
-        String extension = ".docx";
-        SynchronizedQueue<File> directoryQueue = new SynchronizedQueue<>(20);
-        String root = "C:\\Users\\97250\\OperSys\\EX3\\stest";
-        SynchronizedQueue<File> resultsQueue = new SynchronizedQueue<>(20);
-        SynchronizedQueue<String> milestonesQueue = new SynchronizedQueue<>(20);
-        Scouter ans = new Scouter(1, directoryQueue, new File(root), milestonesQueue, true );
-        ans.run();
-        //System.out.println(directoryQueue.getSize());
-
-        Searcher test = new Searcher(2, extension, directoryQueue, resultsQueue, milestonesQueue, true);
-        test.run();
-        String descopy = "C:\\Users\\97250\\Desktop\\descopy";
-        File des = new File(descopy);
-
-        Copier test2 = new Copier(5, des, resultsQueue, milestonesQueue, true);
-        test2.run();
-
-    }
+        if(this.m_isMilestones)
+        {
+            m_milestonesQueue.registerProducer();
+        }
+        File file;
+        while((file = m_resultsQueue.dequeue()) != null)
+        {
+            try {
+                Files.copy(Paths.get(file.getAbsolutePath()), Paths.get(m_destination.getAbsolutePath() + "\\" + file.getName()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if(m_isMilestones)
+            {
+                m_milestonesQueue.enqueue(" Copier from thread id " +  m_id + " : file named " +  file.getName() +  " was copied");
+            }
+        }
+        if(m_isMilestones)
+        {
+            m_milestonesQueue.unregisterProducer();
+        }
+    }*/
 }
