@@ -38,11 +38,13 @@ public class Searcher implements Runnable {
                     }
                     m_resultsQueue.unregisterProducer();
                     if (m_isMilestones) {
+                        m_milestonesQueue.registerProducer();
                         try {
                             m_milestonesQueue.enqueue(file.getName());
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+                        m_milestonesQueue.unregisterProducer();
                     }
                 }
 
@@ -55,7 +57,7 @@ public class Searcher implements Runnable {
         }
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         String extension = ".docx";
         SynchronizedQueue<File> directoryQueue = new SynchronizedQueue<>(20);
         String root = "C:\\Users\\97250\\OperSys\\EX3\\stest";
@@ -68,5 +70,5 @@ public class Searcher implements Runnable {
         Searcher test = new Searcher(2, extension, directoryQueue, resultsQueue, milestonesQueue, true);
         test.run();
         System.out.println(test.m_resultsQueue.getSize());
-    }
+    }*/
 }

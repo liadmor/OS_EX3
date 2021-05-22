@@ -1,3 +1,4 @@
+import javax.xml.crypto.dsig.spec.XSLTTransformParameterSpec;
 import java.io.*;
 import java.io.File;
 
@@ -23,12 +24,15 @@ public class Copier implements Runnable {
         File fileToCopy = null;
         InputStream is = null;
         OutputStream os = null;
+        String dest = null;
 
         try {
             fileToCopy = m_resultsQueue.dequeue();
+            dest = m_destination.getAbsolutePath() + File.separator + fileToCopy.getName();
             while (fileToCopy != null) {
+                dest = m_destination.getAbsolutePath() + File.separator + fileToCopy.getName();
                 is = new FileInputStream((fileToCopy));
-                os = new FileOutputStream(m_destination);
+                os = new FileOutputStream(dest);
                 byte[] buf = new byte[COPY_BUFFER_SIZE];
                 int bytesRead = is.read(buf);
                 while (bytesRead > 0) {
@@ -36,9 +40,30 @@ public class Copier implements Runnable {
                 }
                 is.close();
                 os.close();
+                fileToCopy = m_resultsQueue.dequeue();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) {
+        String extension = ".docx";
+        SynchronizedQueue<File> directoryQueue = new SynchronizedQueue<>(20);
+        String root = "C:\\Users\\97250\\OperSys\\EX3\\stest";
+        SynchronizedQueue<File> resultsQueue = new SynchronizedQueue<>(20);
+        SynchronizedQueue<String> milestonesQueue = new SynchronizedQueue<>(20);
+        Scouter ans = new Scouter(1, directoryQueue, new File(root), milestonesQueue, true );
+        ans.run();
+        //System.out.println(directoryQueue.getSize());
+
+        Searcher test = new Searcher(2, extension, directoryQueue, resultsQueue, milestonesQueue, true);
+        test.run();
+        String descopy = "C:\\Users\\97250\\Desktop\\descopy";
+        File des = new File(descopy);
+
+        Copier test2 = new Copier(5, des, resultsQueue, milestonesQueue, true);
+        test2.run();
+
     }
 }
