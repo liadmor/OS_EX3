@@ -142,6 +142,7 @@ public class SynchronizedQueue<T> {
 		// TODO: This should be in a critical section
 		synchronized (this){
 			this.producers--;
+			notifyAll();
 		}
 	}
 }

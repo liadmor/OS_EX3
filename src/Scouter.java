@@ -4,7 +4,8 @@ import java.io.FileFilter;
 
 public class Scouter implements Runnable {
 
-
+    public static final int	MAX_DIRECTORY = 10;
+    public static int counter = 1;
     private int m_id;
     private SynchronizedQueue<File> m_directoryQeueu;
     private SynchronizedQueue<String> m_milestonesQueue;
@@ -33,9 +34,10 @@ public class Scouter implements Runnable {
 
     public void run(File m_root, boolean isMilestones) {
 
-        if (!m_root.isDirectory()) {
+        if (!m_root.isDirectory() || counter > MAX_DIRECTORY) {
             return;
         } else {
+            counter++;
             m_directoryQeueu.enqueue(m_root);
             if (isMilestones) {
                 synchronized (this) {

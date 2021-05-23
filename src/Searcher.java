@@ -3,6 +3,8 @@ import java.io.FileFilter;
 
 public class Searcher implements Runnable {
 
+    public static final int	MAX_FILE = 1;
+    public static int counter = 1;
     private int m_id;
     private String m_extension;
     private SynchronizedQueue<File> m_directoryQueue;
@@ -30,7 +32,8 @@ public class Searcher implements Runnable {
             File[] allFiles = dirToSearch.listFiles(File::isFile);
             if (allFiles != null) {
                 for (File file : allFiles) {
-                    if (file.getName().endsWith(m_extension)) {
+                    if ((file.getName().endsWith(m_extension)) && (counter <= MAX_FILE)) {
+                        counter++;
                         m_resultsQueue.enqueue(file);
                         if (m_isMilestones) {
                             m_milestonesQueue.enqueue(String.format("Searcher on thread id %d: directory named \"%s\" was found", m_id, file.getName()));
